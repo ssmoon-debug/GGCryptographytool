@@ -6,55 +6,126 @@
   <title>GG's Encrypt & Decrypt Tool</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-color: radial-gradient(ellipse at bottom, #0d0d1a 0%, #000010 100%);
+      --text-color: #e0e7ff;
+      --title-color: #c2f0ff;
+      --input-bg: #1a1a2e;
+      --input-border: #4a5568;
+      --button-bg: #4dd0e1;
+      --button-hover: #00bcd4;
+      --output-border: #88ccff;
+      --history-bg: rgba(26, 32, 44, 0.8);
+      --history-border: #4a5568;
+      --history-hover: rgba(74, 85, 104, 0.2);
+      --history-operation-bg: #2d3748;
+      --history-text: #cbd5e0;
+    }
+
+    body.light-theme {
+      --bg-color: linear-gradient(to bottom, #f0f4f8 0%, #d9e2ec 100%);
+      --text-color: #334155;
+      --title-color: #0f172a;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e0;
+      --button-bg: #0ea5e9;
+      --button-hover: #0284c7;
+      --output-border: #0ea5e9;
+      --history-bg: rgba(241, 245, 249, 0.9);
+      --history-border: #cbd5e0;
+      --history-hover: rgba(226, 232, 240, 0.7);
+      --history-operation-bg: #e2e8f0;
+      --history-text: #475569;
+    }
+
     body {
       font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(ellipse at bottom, #0d0d1a 0%, #000010 100%);
-      color: #e0e7ff;
+      background: var(--bg-color);
+      color: var(--text-color);
       padding: 20px;
       overflow-x: hidden;
       position: relative;
+      margin: 0;
+      transition: all 0.3s ease;
     }
+    
+    #theme-container {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+    }
+    
+    #themeSelect {
+      width: auto;
+      padding: 8px;
+      margin: 0;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
     h1 {
       text-align: center;
       font-size: 3em;
-      margin-bottom: 20px;
-      color: #c2f0ff;
+      margin-bottom: 30px;
+      padding-top: 20px;
+      color: var(--title-color);
       text-shadow: 0 0 10px #88ccff, 0 0 20px #88ccff;
     }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
     label, select, textarea, input, button {
       display: block;
       width: 100%;
-      margin: 10px 0;
-      padding: 10px;
+      margin: 15px 0;
+      padding: 15px;
       font-size: 1em;
       border-radius: 8px;
-      border: 1px solid #4a5568;
-      background-color: #1a1a2e;
-      color: #e0e7ff;
-      box-shadow: 0 0 5px #334155;
+      border: 1px solid var(--input-border);
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      box-shadow: 0 0 5px var(--input-border);
+      transition: all 0.3s ease;
     }
+    
     input[type="file"] {
-      padding: 5px;
-      background-color: #11182a;
+      padding: 10px;
+      background-color: var(--input-bg);
     }
+    
     button {
-      background-color: #4dd0e1;
+      background-color: var(--button-bg);
       border: none;
       cursor: pointer;
       transition: background-color 0.3s, box-shadow 0.3s;
+      margin: 20px 0;
     }
+    
     button:hover {
-      background-color: #00bcd4;
-      box-shadow: 0 0 10px #00bcd4;
+      background-color: var(--button-hover);
+      box-shadow: 0 0 10px var(--button-hover);
     }
+    
     #output {
       white-space: pre-wrap;
       background: rgba(255, 255, 255, 0.05);
-      padding: 15px;
-      border: 1px dashed #88ccff;
+      padding: 20px;
+      margin: 20px 0;
+      border: 1px dashed var(--output-border);
       border-radius: 8px;
-      color: #ffffff;
+      color: var(--text-color);
+      min-height: 100px;
     }
+    
     .star {
       position: absolute;
       width: 2px;
@@ -67,82 +138,96 @@
       pointer-events: none;
       z-index: 0;
     }
+    
     @keyframes sparkle {
       0%, 100% { opacity: 0; transform: scale(0.5); }
       50% { opacity: 1; transform: scale(1.4); }
     }
     
-    /* New styles for history feature */
+    /* History feature styles */
     #historyContainer {
-      margin-top: 30px;
-      background: rgba(26, 32, 44, 0.8);
+      margin-top: 40px;
+      background: var(--history-bg);
       border-radius: 8px;
-      padding: 15px;
+      padding: 20px;
       max-height: 400px;
       overflow-y: auto;
-      border: 1px solid #4a5568;
+      border: 1px solid var(--history-border);
     }
+    
     .history-item {
-      border-bottom: 1px solid #4a5568;
-      padding: 10px 0;
-      margin-bottom: 10px;
+      border-bottom: 1px solid var(--history-border);
+      padding: 15px 0;
+      margin-bottom: 15px;
       cursor: pointer;
       transition: background-color 0.3s;
     }
+    
     .history-item:hover {
-      background-color: rgba(74, 85, 104, 0.2);
+      background-color: var(--history-hover);
     }
+    
     .history-item-header {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 5px;
+      margin-bottom: 10px;
     }
+    
     .history-algorithm {
-      color: #4dd0e1;
+      color: var(--button-bg);
       font-weight: bold;
     }
+    
     .history-time {
-      color: #a0aec0;
+      color: var(--history-text);
       font-size: 0.9em;
     }
+    
     .history-operation {
-      background-color: #2d3748;
+      background-color: var(--history-operation-bg);
       display: inline-block;
-      padding: 2px 8px;
+      padding: 5px 10px;
       border-radius: 4px;
       margin-right: 10px;
       font-size: 0.9em;
     }
+    
     .history-preview {
-      color: #cbd5e0;
+      color: var(--history-text);
       font-size: 0.9em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    
     .history-buttons {
       display: flex;
-      gap: 10px;
-      margin-top: 5px;
+      gap: 15px;
+      margin-top: 10px;
     }
+    
     .history-buttons button {
-      padding: 5px;
+      padding: 8px;
       font-size: 0.8em;
       width: auto;
+      margin: 5px 0;
     }
+    
     .history-toggle {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 20px;
+      margin-top: 30px;
     }
+    
     #historyToggleBtn {
       width: auto;
-      padding: 5px 15px;
+      padding: 8px 15px;
     }
+    
     .history-count {
-      background-color: #2d3748;
-      padding: 3px 8px;
+      background-color: var(--history-operation-bg);
+      padding: 5px 10px;
       border-radius: 10px;
       font-size: 0.9em;
     }
@@ -151,70 +236,117 @@
     .slide-in {
       animation: slideIn 0.3s forwards;
     }
+    
     .slide-out {
       animation: slideOut 0.3s forwards;
     }
+    
     @keyframes slideIn {
       from { transform: translateY(-20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
+    
     @keyframes slideOut {
       from { transform: translateY(0); opacity: 1; }
       to { transform: translateY(-20px); opacity: 0; }
     }
+    
     .glow-input {
-      box-shadow: 0 0 10px #00bcd4 !important;
-      border-color: #00bcd4 !important;
+      box-shadow: 0 0 10px var(--button-hover) !important;
+      border-color: var(--button-hover) !important;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .action-buttons button {
+      flex: 1;
+    }
+    
+    h3 {
+      margin-top: 30px;
     }
   </style>
 </head>
 <body>
-  <h1>🌌 GG's Encrypt and Decrypt Tool</h1>
-
-  <label for="algorithmSelect">Choose an Algorithm:</label>
-  <select id="algorithmSelect">
-    <option value="caesar">Caesar Cipher</option>
-    <option value="atbash">Atbash Cipher</option>
-    <option value="vigenere">Vigenère Cipher</option>
-    <option value="xor">XOR Cipher</option>
-    <option value="aes">Simplified AES</option>
-    <option value="rsa">Simplified RSA</option>
-  </select>
-
-  <div id="textInputArea">
-    <label for="inputText">Enter your text:</label>
-    <textarea id="inputText" rows="6" placeholder="Enter your text here..."></textarea>
-
-    <div id="fileInputArea">
-      <label for="uploadFileInput">Upload a .txt file (optional):</label>
-      <input type="file" id="uploadFileInput" accept=".txt" onchange="handleFileUpload(event)">
-    </div>
-  </div>
-
-  <button onclick="handleEncrypt()">Encrypt</button>
-  <button onclick="handleDecrypt()">Decrypt</button>
-
-  <h3>Output:</h3>
-  <div id="output"></div>
-  <button onclick="downloadOutput()">Download Result</button>
-
-  <!-- History Feature UI -->
-  <div class="history-toggle">
-    <h3>History</h3>
-    <span class="history-count" id="historyCount">0 items</span>
-    <button id="historyToggleBtn" onclick="toggleHistory()">Show History</button>
+  <div id="theme-container">
+    <select id="themeSelect" onchange="changeTheme(this.value)">
+      <option value="dark">Dark Theme</option>
+      <option value="light">Light Theme</option>
+    </select>
   </div>
   
-  <div id="historyContainer" style="display: none;">
-    <div id="historyList">
-      <!-- History items will be populated here -->
+  <div class="container">
+    <h1>🌌 GG's Encrypt and Decrypt Tool</h1>
+  
+    <label for="algorithmSelect">Choose an Algorithm:</label>
+    <select id="algorithmSelect">
+      <option value="caesar">Caesar Cipher</option>
+      <option value="atbash">Atbash Cipher</option>
+      <option value="vigenere">Vigenère Cipher</option>
+      <option value="xor">XOR Cipher</option>
+      <option value="aes">Simplified AES</option>
+      <option value="rsa">Simplified RSA</option>
+    </select>
+  
+    <div id="textInputArea">
+      <label for="inputText">Enter your text:</label>
+      <textarea id="inputText" rows="6" placeholder="Enter your text here..."></textarea>
+  
+      <div id="fileInputArea">
+        <label for="uploadFileInput">Upload a .txt file (optional):</label>
+        <input type="file" id="uploadFileInput" accept=".txt" onchange="handleFileUpload(event)">
+      </div>
     </div>
-    <button onclick="clearHistory()" style="margin-top: 15px; background-color: #e53e3e;">Clear History</button>
+  
+    <div class="action-buttons">
+      <button onclick="handleEncrypt()">Encrypt</button>
+      <button onclick="handleDecrypt()">Decrypt</button>
+    </div>
+  
+    <h3>Output:</h3>
+    <div id="output"></div>
+    <button onclick="downloadOutput()">Download Result</button>
+  
+    <!-- History Feature UI -->
+    <div class="history-toggle">
+      <h3>History</h3>
+      <span class="history-count" id="historyCount">0 items</span>
+      <button id="historyToggleBtn" onclick="toggleHistory()">Show History</button>
+    </div>
+    
+    <div id="historyContainer" style="display: none;">
+      <div id="historyList">
+        <!-- History items will be populated here -->
+      </div>
+      <button onclick="clearHistory()" style="margin-top: 20px; background-color: #e53e3e;">Clear History</button>
+    </div>
   </div>
 
   <script>
     // Initialize history array from localStorage or create empty array
     let operationHistory = JSON.parse(localStorage.getItem('encryptionHistory')) || [];
+    
+    // Check for saved theme preference
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.getElementById('themeSelect').value = savedTheme;
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      }
+    });
+    
+    // Theme Change Function
+    function changeTheme(theme) {
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+      localStorage.setItem('theme', theme);
+    }
     
     // Update history count badge
     function updateHistoryCount() {
@@ -407,7 +539,6 @@
         historyItem.className = 'history-item';
         historyItem.id = `history-${item.id}`;
         
-        const operationClass = item.operation === 'encrypt' ? 'bg-blue-500' : 'bg-green-500';
         const operationLabel = item.operation === 'encrypt' ? 'Encrypted' : 'Decrypted';
         
         historyItem.innerHTML = `
