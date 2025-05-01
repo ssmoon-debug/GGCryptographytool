@@ -71,6 +71,101 @@
       0%, 100% { opacity: 0; transform: scale(0.5); }
       50% { opacity: 1; transform: scale(1.4); }
     }
+    
+    /* New styles for history feature */
+    #historyContainer {
+      margin-top: 30px;
+      background: rgba(26, 32, 44, 0.8);
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #4a5568;
+    }
+    .history-item {
+      border-bottom: 1px solid #4a5568;
+      padding: 10px 0;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .history-item:hover {
+      background-color: rgba(74, 85, 104, 0.2);
+    }
+    .history-item-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .history-algorithm {
+      color: #4dd0e1;
+      font-weight: bold;
+    }
+    .history-time {
+      color: #a0aec0;
+      font-size: 0.9em;
+    }
+    .history-operation {
+      background-color: #2d3748;
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 10px;
+      font-size: 0.9em;
+    }
+    .history-preview {
+      color: #cbd5e0;
+      font-size: 0.9em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .history-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+    .history-buttons button {
+      padding: 5px;
+      font-size: 0.8em;
+      width: auto;
+    }
+    .history-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+    }
+    #historyToggleBtn {
+      width: auto;
+      padding: 5px 15px;
+    }
+    .history-count {
+      background-color: #2d3748;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.9em;
+    }
+    
+    /* Animation for history panel */
+    .slide-in {
+      animation: slideIn 0.3s forwards;
+    }
+    .slide-out {
+      animation: slideOut 0.3s forwards;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-20px); opacity: 0; }
+    }
+    .glow-input {
+      box-shadow: 0 0 10px #00bcd4 !important;
+      border-color: #00bcd4 !important;
+    }
   </style>
 </head>
 <body>
@@ -103,7 +198,32 @@
   <div id="output"></div>
   <button onclick="downloadOutput()">Download Result</button>
 
+  <!-- History Feature UI -->
+  <div class="history-toggle">
+    <h3>History</h3>
+    <span class="history-count" id="historyCount">0 items</span>
+    <button id="historyToggleBtn" onclick="toggleHistory()">Show History</button>
+  </div>
+  
+  <div id="historyContainer" style="display: none;">
+    <div id="historyList">
+      <!-- History items will be populated here -->
+    </div>
+    <button onclick="clearHistory()" style="margin-top: 15px; background-color: #e53e3e;">Clear History</button>
+  </div>
+
   <script>
+    // Initialize history array from localStorage or create empty array
+    let operationHistory = JSON.parse(localStorage.getItem('encryptionHistory')) || [];
+    
+    // Update history count badge
+    function updateHistoryCount() {
+      document.getElementById('historyCount').textContent = `${operationHistory.length} items`;
+    }
+    
+    // Call this on page load
+    updateHistoryCount();
+    
     function handleEncrypt() {
       clearVisuals();
       addStars(30);
@@ -120,21 +240,26 @@
       const algorithm = document.getElementById('algorithmSelect').value;
       const inputText = document.getElementById('inputText').value;
 
-      const textHandler = (text) => {
-        let result = '';
-        switch (algorithm) {
-          case 'caesar': result = caesarCipher(text, mode === 'encrypt' ? 3 : -3); break;
-          case 'atbash': result = atbashCipher(text); break;
-          case 'vigenere': result = vigenereCipher(text, 'KEY', mode === 'encrypt'); break;
-          case 'xor': result = xorCipher(text, 'K'); break;
-          case 'aes': result = aesCipher(text, 'SIMPLEKEY', mode === 'encrypt'); break;
-          case 'rsa': result = rsaCipher(text, mode === 'encrypt'); break;
-          default: result = '[Unsupported algorithm]';
-        }
-        document.getElementById('output').textContent = result;
-      };
+      if (!inputText.trim()) {
+        document.getElementById('output').textContent = "Please enter some text to process.";
+        return;
+      }
 
-      textHandler(inputText);
+      let result = '';
+      switch (algorithm) {
+        case 'caesar': result = caesarCipher(inputText, mode === 'encrypt' ? 3 : -3); break;
+        case 'atbash': result = atbashCipher(inputText); break;
+        case 'vigenere': result = vigenereCipher(inputText, 'KEY', mode === 'encrypt'); break;
+        case 'xor': result = xorCipher(inputText, 'K'); break;
+        case 'aes': result = aesCipher(inputText, 'SIMPLEKEY', mode === 'encrypt'); break;
+        case 'rsa': result = rsaCipher(inputText, mode === 'encrypt'); break;
+        default: result = '[Unsupported algorithm]';
+      }
+      
+      document.getElementById('output').textContent = result;
+      
+      // Add to history
+      addToHistory(algorithm, mode, inputText, result);
     }
 
     function caesarCipher(str, shift) {
@@ -239,6 +364,138 @@
 
     function clearVisuals() {
       document.querySelectorAll('.star').forEach(el => el.remove());
+    }
+    
+    // History Functions
+    function addToHistory(algorithm, operation, inputText, result) {
+      const historyItem = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        algorithm: algorithm,
+        operation: operation,
+        input: inputText,
+        output: result
+      };
+      
+      // Add to beginning of array (newest first)
+      operationHistory.unshift(historyItem);
+      
+      // Limit history to 50 items
+      if (operationHistory.length > 50) {
+        operationHistory = operationHistory.slice(0, 50);
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('encryptionHistory', JSON.stringify(operationHistory));
+      
+      // Update UI
+      updateHistoryCount();
+      renderHistory();
+    }
+    
+    function renderHistory() {
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = '';
+      
+      if (operationHistory.length === 0) {
+        historyList.innerHTML = '<p>No history yet. Encrypt or decrypt some text to see your history.</p>';
+        return;
+      }
+      
+      operationHistory.forEach(item => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.id = `history-${item.id}`;
+        
+        const operationClass = item.operation === 'encrypt' ? 'bg-blue-500' : 'bg-green-500';
+        const operationLabel = item.operation === 'encrypt' ? 'Encrypted' : 'Decrypted';
+        
+        historyItem.innerHTML = `
+          <div class="history-item-header">
+            <span class="history-algorithm">${item.algorithm.toUpperCase()}</span>
+            <span class="history-time">${item.timestamp}</span>
+          </div>
+          <div>
+            <span class="history-operation">${operationLabel}</span>
+            <span class="history-preview">${item.input.substring(0, 30)}${item.input.length > 30 ? '...' : ''}</span>
+          </div>
+          <div class="history-buttons">
+            <button onclick="loadHistoryItem(${item.id})">Load Input</button>
+            <button onclick="loadHistoryOutput(${item.id})">Load Output</button>
+          </div>
+        `;
+        
+        historyList.appendChild(historyItem);
+      });
+    }
+    
+    function toggleHistory() {
+      const historyContainer = document.getElementById('historyContainer');
+      const toggleBtn = document.getElementById('historyToggleBtn');
+      
+      if (historyContainer.style.display === 'none') {
+        historyContainer.style.display = 'block';
+        historyContainer.classList.add('slide-in');
+        toggleBtn.textContent = 'Hide History';
+        renderHistory();
+      } else {
+        historyContainer.classList.remove('slide-in');
+        historyContainer.classList.add('slide-out');
+        setTimeout(() => {
+          historyContainer.style.display = 'none';
+          historyContainer.classList.remove('slide-out');
+        }, 300);
+        toggleBtn.textContent = 'Show History';
+      }
+    }
+    
+    function loadHistoryItem(id) {
+      const item = operationHistory.find(item => item.id === id);
+      if (item) {
+        const inputTextArea = document.getElementById('inputText');
+        inputTextArea.value = item.input;
+        
+        // Set algorithm dropdown
+        document.getElementById('algorithmSelect').value = item.algorithm;
+        
+        // Highlight input field briefly
+        inputTextArea.classList.add('glow-input');
+        setTimeout(() => {
+          inputTextArea.classList.remove('glow-input');
+        }, 1000);
+        
+        // Scroll to input area
+        inputTextArea.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    function loadHistoryOutput(id) {
+      const item = operationHistory.find(item => item.id === id);
+      if (item) {
+        const inputTextArea = document.getElementById('inputText');
+        inputTextArea.value = item.output;
+        
+        // Set algorithm dropdown
+        document.getElementById('algorithmSelect').value = item.algorithm;
+        
+        // Highlight input field briefly
+        inputTextArea.classList.add('glow-input');
+        setTimeout(() => {
+          inputTextArea.classList.remove('glow-input');
+        }, 1000);
+        
+        // Scroll to input area
+        inputTextArea.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    function clearHistory() {
+      if (confirm('Are you sure you want to clear your history? This cannot be undone.')) {
+        operationHistory = [];
+        localStorage.removeItem('encryptionHistory');
+        updateHistoryCount();
+        renderHistory();
+      }
     }
   </script>
 </body>
