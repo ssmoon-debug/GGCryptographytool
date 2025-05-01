@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GG's Encrypt & Decrypt Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(ellipse at bottom, #0d0d1a 0%, #000010 100%);
+      color: #e0e7ff;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      font-size: 3em;
+      margin-bottom: 20px;
+      color: #c2f0ff;
+      text-shadow: 0 0 10px #88ccff, 0 0 20px #88ccff;
+    }
+    label, select, textarea, input, button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 8px;
+      border: 1px solid #4a5568;
+      background-color: #1a1a2e;
+      color: #e0e7ff;
+      box-shadow: 0 0 5px #334155;
+    }
+    input[type="file"] {
+      padding: 5px;
+      background-color: #11182a;
+    }
+    button {
+      background-color: #4dd0e1;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    button:hover {
+      background-color: #00bcd4;
+      box-shadow: 0 0 10px #00bcd4;
+    }
+    #output {
+      white-space: pre-wrap;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border: 1px dashed #88ccff;
+      border-radius: 8px;
+      color: #ffffff;
+    }
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: white;
+      border-radius: 50%;
+      animation: sparkle 1.5s ease-in-out infinite;
+      opacity: 0;
+      box-shadow: 0 0 6px 2px white;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes sparkle {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🌌 GG's Encrypt and Decrypt Tool</h1>
+
+  <label for="algorithmSelect">Choose an Algorithm:</label>
+  <select id="algorithmSelect">
+    <option value="caesar">Caesar Cipher</option>
+    <option value="atbash">Atbash Cipher</option>
+    <option value="vigenere">Vigenère Cipher</option>
+    <option value="xor">XOR Cipher</option>
+    <option value="aes">Simplified AES</option>
+    <option value="rsa">Simplified RSA</option>
+  </select>
+
+  <div id="textInputArea">
+    <label for="inputText">Enter your text:</label>
+    <textarea id="inputText" rows="6" placeholder="Enter your text here..."></textarea>
+
+    <div id="fileInputArea">
+      <label for="uploadFileInput">Upload a .txt file (optional):</label>
+      <input type="file" id="uploadFileInput" accept=".txt" onchange="handleFileUpload(event)">
+    </div>
+  </div>
+
+  <button onclick="handleEncrypt()">Encrypt</button>
+  <button onclick="handleDecrypt()">Decrypt</button>
+
+  <h3>Output:</h3>
+  <div id="output"></div>
+  <button onclick="downloadOutput()">Download Result</button>
+
+  <script>
+    function handleEncrypt() {
+      clearVisuals();
+      addStars(30);
+      process('encrypt');
+    }
+
+    function handleDecrypt() {
+      clearVisuals();
+      addStars(60);
+      process('decrypt');
+    }
+
+    function process(mode) {
+      const algorithm = document.getElementById('algorithmSelect').value;
+      const inputText = document.getElementById('inputText').value;
+
+      const textHandler = (text) => {
+        let result = '';
+        switch (algorithm) {
+          case 'caesar': result = caesarCipher(text, mode === 'encrypt' ? 3 : -3); break;
+          case 'atbash': result = atbashCipher(text); break;
+          case 'vigenere': result = vigenereCipher(text, 'KEY', mode === 'encrypt'); break;
+          case 'xor': result = xorCipher(text, 'K'); break;
+          case 'aes': result = aesCipher(text, 'SIMPLEKEY', mode === 'encrypt'); break;
+          case 'rsa': result = rsaCipher(text, mode === 'encrypt'); break;
+          default: result = '[Unsupported algorithm]';
+        }
+        document.getElementById('output').textContent = result;
+      };
+
+      textHandler(inputText);
+    }
+
+    function caesarCipher(str, shift) {
+      return str.split('').map(char => {
+        const code = char.charCodeAt(0);
+        if (char >= 'a' && char <= 'z')
+          return String.fromCharCode(((code - 97 + shift + 26) % 26) + 97);
+        if (char >= 'A' && char <= 'Z')
+          return String.fromCharCode(((code - 65 + shift + 26) % 26) + 65);
+        return char;
+      }).join('');
+    }
+
+    function atbashCipher(str) {
+      return str.split('').map(char => {
+        if (char >= 'a' && char <= 'z')
+          return String.fromCharCode(122 - (char.charCodeAt(0) - 97));
+        if (char >= 'A' && char <= 'Z')
+          return String.fromCharCode(90 - (char.charCodeAt(0) - 65));
+        return char;
+      }).join('');
+    }
+
+    function vigenereCipher(text, key, encrypt = true) {
+      let result = '';
+      key = key.toUpperCase();
+      let keyIndex = 0;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const isUpper = char >= 'A' && char <= 'Z';
+        const isLower = char >= 'a' && char <= 'z';
+
+        if (isUpper || isLower) {
+          const base = isUpper ? 65 : 97;
+          const keyChar = key[keyIndex % key.length];
+          const shift = keyChar.charCodeAt(0) - 65;
+          const charCode = char.charCodeAt(0) - base;
+          const newChar = encrypt
+            ? (charCode + shift) % 26
+            : (charCode - shift + 26) % 26;
+          result += String.fromCharCode(newChar + base);
+          keyIndex++;
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+
+    function xorCipher(text, key) {
+      return text.split('').map((char, i) =>
+        String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+      ).join('');
+    }
+
+    function aesCipher(text, key, encrypt = true) {
+      const shift = encrypt ? key.length : -key.length;
+      return text.split('').map(char =>
+        String.fromCharCode(char.charCodeAt(0) + shift)
+      ).join('');
+    }
+
+    function rsaCipher(text, encrypt = true) {
+      return text.split('').map(char => {
+        const code = char.charCodeAt(0);
+        return encrypt
+          ? String.fromCharCode((code * code) % 256)
+          : String.fromCharCode(Math.round(Math.sqrt(code)));
+      }).join('');
+    }
+
+    function downloadOutput() {
+      const blob = new Blob([document.getElementById('output').textContent], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'result.txt';
+      link.click();
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('inputText').value = e.target.result;
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    function addStars(count) {
+      for (let i = 0; i < count; i++) {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        star.style.top = Math.random() * window.innerHeight + 'px';
+        star.style.left = Math.random() * window.innerWidth + 'px';
+        document.body.appendChild(star);
+        setTimeout(() => star.remove(), 2000);
+      }
+    }
+
+    function clearVisuals() {
+      document.querySelectorAll('.star').forEach(el => el.remove());
+    }
+  </script>
+</body>
+</html>
